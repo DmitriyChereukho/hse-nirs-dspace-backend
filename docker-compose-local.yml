@@ -1,0 +1,103 @@
+version: "3.8"
+
+networks:
+  dspacenet:
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+
+services:
+
+  dspace-ui:
+    container_name: dspace-ui
+    image: docker.io/dspace/dspace-angular:dspace-9_x
+    environment:
+      DSPACE_REST_HOST: localhost
+      DSPACE_REST_PORT: 8080
+      DSPACE_REST_NAMESPACE: /server
+    ports:
+      - "4000:4000"
+    depends_on:
+      - dspace
+    networks:
+      - dspacenet
+
+  dspace:
+    container_name: dspace
+    image: docker.io/dspace/dspace:dspace-9_x
+    environment:
+      dspace__P__dir: /dspace
+      dspace__P__server__P__url: http://localhost:8080/server
+      dspace__P__ui__P__url: http://localhost:4000
+      dspace__P__name: 'DSpace Local'
+
+      db__P__url: jdbc:postgresql://dspacedb:5432/dspace
+      solr__P__server: http://dspacesolr:8983/solr
+
+      proxies__P__trusted__P__ipranges: '172.23.0'
+
+    depends_on:
+      - dspacedb
+      - dspacesolr
+    networks:
+      - dspacenet
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    volumes:
+      - assetstore:/dspace/assetstore
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        while (!</dev/tcp/dspacedb/5432) > /dev/null 2>&1; do sleep 1; done;
+        /dspace/bin/dspace database migrate;
+        java -jar /dspace/webapps/server-boot.jar --dspace.dir=/dspace
+
+  dspacedb:
+    container_name: dspacedb
+    image: docker.io/dspace/dspace-postgres-pgcrypto:dspace-9_x
+    environment:
+      PGDATA: /pgdata
+      POSTGRES_PASSWORD: dspace
+    networks:
+      - dspacenet
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/pgdata
+
+  dspacesolr:
+    container_name: dspacesolr
+    image: docker.io/dspace/dspace-solr:dspace-9_x
+    networks:
+      - dspacenet
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr_data:/var/solr/data
+    user: root
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        init-var-solr
+        precreate-core authority /opt/solr/server/solr/configsets/authority
+        cp -r /opt/solr/server/solr/configsets/authority/* authority
+        precreate-core oai /opt/solr/server/solr/configsets/oai
+        cp -r /opt/solr/server/solr/configsets/oai/* oai
+        precreate-core search /opt/solr/server/solr/configsets/search
+        cp -r /opt/solr/server/solr/configsets/search/* search
+        precreate-core statistics /opt/solr/server/solr/configsets/statistics
+        cp -r /opt/solr/server/solr/configsets/statistics/* statistics
+        precreate-core qaevent /opt/solr/server/solr/configsets/qaevent
+        cp -r /opt/solr/server/solr/configsets/qaevent/* qaevent
+        precreate-core suggestion /opt/solr/server/solr/configsets/suggestion
+        cp -r /opt/solr/server/solr/configsets/suggestion/* suggestion
+        chown -R solr:solr /var/solr
+        runuser -u solr -- solr-foreground
+
+volumes:
+  assetstore:
+  pgdata:
+  solr_data:
