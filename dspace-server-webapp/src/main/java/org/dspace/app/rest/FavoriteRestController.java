@@ -81,20 +81,20 @@ public class FavoriteRestController {
         }
     }
 
-    @GetMapping("/user/{user_id}")
+    @GetMapping("/items")
     @PreAuthorize("hasAuthority('AUTHENTICATED')")
     public ResponseEntity<List<FavoriteItemResponseRest>> getUserFavorites(
-            @PathVariable("user_id") UUID userId) throws SQLException {
+            @RequestParam UUID userID) throws SQLException {
 
         try (Context context = new Context()) {
             context.turnOffAuthorisationSystem();
 
-            EPerson user = ePersonService.find(context, userId);
+            EPerson user = ePersonService.find(context, userID);
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            List<UUID> favoriteItemIds = favoriteDAO.getUserFavorites(context, userId);
+            List<UUID> favoriteItemIds = favoriteDAO.getUserFavorites(context, userID);
 
             List<FavoriteItemResponseRest> response = new ArrayList<>();
             for (UUID itemId : favoriteItemIds) {
