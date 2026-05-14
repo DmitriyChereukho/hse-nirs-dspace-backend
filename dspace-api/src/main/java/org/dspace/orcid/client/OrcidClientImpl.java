@@ -103,6 +103,7 @@ public class OrcidClientImpl implements OrcidClient {
         params.add(new BasicNameValuePair("grant_type", "authorization_code"));
         params.add(new BasicNameValuePair("client_id", orcidConfiguration.getClientId()));
         params.add(new BasicNameValuePair("client_secret", orcidConfiguration.getClientSecret()));
+        params.add(new BasicNameValuePair("redirect_uri", orcidConfiguration.getRedirectUrl()));
 
         HttpUriRequest httpUriRequest = RequestBuilder.post(orcidConfiguration.getTokenEndpointUrl())
             .addHeader("Content-Type", "application/x-www-form-urlencoded")
