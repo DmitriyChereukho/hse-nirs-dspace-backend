@@ -15,7 +15,6 @@ public class FavoriteItemResponseRest {
     @JsonProperty("uri")
     private String uri;
 
-    // Конструкторы
     public FavoriteItemResponseRest() {
     }
 
@@ -25,7 +24,6 @@ public class FavoriteItemResponseRest {
         this.uri = uri;
     }
 
-    // Геттеры и сеттеры
     public UUID getItemId() {
         return itemId;
     }

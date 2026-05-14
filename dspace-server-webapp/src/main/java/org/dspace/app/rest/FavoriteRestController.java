@@ -1,19 +1,20 @@
 package org.dspace.app.rest;
 
-import org.dspace.app.rest.model.FavoriteRest;
 import org.dspace.app.rest.model.FavoriteItemResponseRest;
+import org.dspace.app.rest.model.FavoriteRest;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
+import org.dspace.eperson.dao.FavoriteDAO;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
-import org.dspace.eperson.dao.FavoriteDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
@@ -32,27 +33,26 @@ public class FavoriteRestController {
     private final ItemService itemService = ContentServiceFactory.getInstance().getItemService();
 
     @GetMapping
+    @PreAuthorize("hasAuthority('AUTHENTICATED')")
     public ResponseEntity<Boolean> isFavorite(
             @RequestParam UUID userID,
             @RequestParam UUID itemID) throws SQLException {
 
         try (Context context = new Context()) {
-            context.turnOffAuthorisationSystem();
             boolean isFavorite = favoriteDAO.isFavorite(context, userID, itemID);
             return ResponseEntity.ok(isFavorite);
         }
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('AUTHENTICATED')")
     public ResponseEntity<Void> addFavorite(
             @RequestBody FavoriteRest favoriteRest) throws SQLException {
 
         try (Context context = new Context()) {
-            context.turnOffAuthorisationSystem();
-
             EPerson currentUser = ePersonService.find(context, favoriteRest.getUserId());
             if (currentUser == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             context.setCurrentUser(currentUser);
 
@@ -63,16 +63,15 @@ public class FavoriteRestController {
     }
 
     @DeleteMapping
+    @PreAuthorize("hasAuthority('AUTHENTICATED')")
     public ResponseEntity<Void> removeFavorite(
             @RequestParam UUID userID,
             @RequestParam UUID itemID) throws SQLException {
 
         try (Context context = new Context()) {
-            context.turnOffAuthorisationSystem();
-
             EPerson currentUser = ePersonService.find(context, userID);
             if (currentUser == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             context.setCurrentUser(currentUser);
 
@@ -83,6 +82,7 @@ public class FavoriteRestController {
     }
 
     @GetMapping("/user/{user_id}")
+    @PreAuthorize("hasAuthority('AUTHENTICATED')")
     public ResponseEntity<List<FavoriteItemResponseRest>> getUserFavorites(
             @PathVariable("user_id") UUID userId) throws SQLException {
 
@@ -94,17 +94,14 @@ public class FavoriteRestController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            // Получаем список UUID избранных items
             List<UUID> favoriteItemIds = favoriteDAO.getUserFavorites(context, userId);
 
-            // Создаем ответ с названиями и ссылками
             List<FavoriteItemResponseRest> response = new ArrayList<>();
             for (UUID itemId : favoriteItemIds) {
                 Item item = itemService.find(context, itemId);
                 if (item != null) {
                     String title = getMetadataValue(item, "dc.title");
                     String uri = getMetadataValue(item, "dc.identifier.uri");
-
                     response.add(new FavoriteItemResponseRest(itemId, title, uri));
                 }
             }
@@ -113,7 +110,6 @@ public class FavoriteRestController {
         }
     }
 
-    // Вспомогательный метод для получения metadata
     private String getMetadataValue(Item item, String metadataField) {
         List<MetadataValue> values = itemService.getMetadataByMetadataString(item, metadataField);
         if (values != null && !values.isEmpty()) {
