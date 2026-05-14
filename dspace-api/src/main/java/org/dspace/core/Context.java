@@ -231,7 +231,7 @@ public class Context implements AutoCloseable {
      *
      * @return the database connection
      */
-    DBConnection getDBConnection() {
+    public DBConnection getDBConnection() {
         return dbConnection;
     }
 

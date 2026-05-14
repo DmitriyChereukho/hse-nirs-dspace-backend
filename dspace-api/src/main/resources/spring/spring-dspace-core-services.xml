@@ -30,4 +30,7 @@
     <bean class="org.dspace.storage.rdbms.SiteServiceInitializer"/>
     <bean class="org.dspace.storage.rdbms.EntityTypeServiceInitializer"/>
 
+    <!-- Favorite DAO for managing user favorites/bookmarks -->
+    <bean id="favoriteDAO" class="org.dspace.eperson.dao.impl.FavoriteDAOImpl"/>
+
 </beans>

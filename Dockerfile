@@ -1,53 +1,58 @@
-# ---------- Stage 1: Maven build ----------
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+ARG JDK_VERSION=17
+ARG DSPACE_VERSION=dspace-9_x
+ARG DOCKER_REGISTRY=docker.io
 
-WORKDIR /build
+# Step 1 - Run Maven Build
+FROM ${DOCKER_REGISTRY}/dspace/dspace-dependencies:${DSPACE_VERSION} AS build
+ARG TARGET_DIR=dspace-installer
+WORKDIR /app
+
+# Переключаемся на root для всей сборки
+USER root
+
+# Создаём директории
+RUN mkdir -p /tmp/install
 
 # Копируем исходники
-COPY . .
+ADD . /app/
 
-# Собираем DSpace
-RUN mvn -B \
-    -DskipTests \
-    -Dmaven.wagon.http.retryHandler.count=5 \
-    -Dmaven.wagon.http.pool=false \
-    clean package
+# Запускаем Maven от root (у него нет проблем с правами)
+ENV MAVEN_FLAGS="-P-test-environment -Denforcer.skip=true -Dcheckstyle.skip=true -Dlicense.skip=true -Dxml.skip=true"
+RUN mvn --no-transfer-progress package ${MAVEN_FLAGS} && \
+  mv /app/dspace/target/${TARGET_DIR}/* /tmp/install && \
+  mvn clean
 
-# ---------- Stage 2: Ant install ----------
-FROM eclipse-temurin:17 AS ant_build
+RUN rm -rf /tmp/install/webapps/server/
 
+# Step 2 - Run Ant Deploy
+FROM docker.io/eclipse-temurin:${JDK_VERSION} AS ant_build
 ARG TARGET_DIR=dspace-installer
-
+COPY --from=build /tmp/install /dspace-src
 WORKDIR /dspace-src
 
-# Копируем dspace-installer из предыдущего слоя
-COPY --from=build /build/dspace/target/${TARGET_DIR} /dspace-src
+ENV ANT_VERSION=1.10.13
+ENV ANT_HOME=/tmp/ant-$ANT_VERSION
+ENV PATH=$ANT_HOME/bin:$PATH
 
-# Устанавливаем ant
-RUN apt-get update && \
-    apt-get install -y curl tar && \
-    curl -L https://archive.apache.org/dist/ant/binaries/apache-ant-1.10.13-bin.tar.gz \
-    | tar -xz -C /opt && \
-    ln -s /opt/apache-ant-1.10.13/bin/ant /usr/bin/ant
+RUN mkdir $ANT_HOME && \
+    curl --silent --show-error --location --fail --retry 5 --output /tmp/apache-ant.tar.gz \
+      https://archive.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz && \
+    tar -zx --strip-components=1 -f /tmp/apache-ant.tar.gz -C $ANT_HOME && \
+    rm /tmp/apache-ant.tar.gz
 
-# Выполняем установку DSpace
-RUN ant init_installation update_configs update_code
+RUN ant init_installation update_configs update_code update_webapps
 
-# ---------- Stage 3: Runtime ----------
-FROM eclipse-temurin:17
-
+# Step 3 - Start up DSpace via Runnable JAR
+FROM docker.io/eclipse-temurin:${JDK_VERSION}
 ENV DSPACE_INSTALL=/dspace
-ENV JAVA_OPTS="-Xmx1000m"
+COPY --from=ant_build /dspace $DSPACE_INSTALL
+WORKDIR $DSPACE_INSTALL
 
-# Копируем готовую установку
-COPY --from=ant_build /dspace ${DSPACE_INSTALL}
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends host \
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем unzip (нужно для AIP)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR ${DSPACE_INSTALL}
-
-# Запускаем DSpace через его скрипт start
-CMD ["/dspace/bin/dspace", "start"]
+EXPOSE 8080 8000
+ENV JAVA_OPTS=-Xmx2000m
+ENTRYPOINT ["java", "-jar", "webapps/server-boot.jar", "--dspace.dir=$DSPACE_INSTALL"]
