@@ -102,7 +102,7 @@ public class FavoriteRestController {
                 if (item != null) {
                     String title = getMetadataValue(item, "dc.title");
                     String uri = getMetadataValue(item, "dc.identifier.uri");
-                    response.add(new FavoriteItemResponseRest(itemId, title, uri));
+                    response.add(new FavoriteItemResponseRest(title, uri));
                 }
             }
 

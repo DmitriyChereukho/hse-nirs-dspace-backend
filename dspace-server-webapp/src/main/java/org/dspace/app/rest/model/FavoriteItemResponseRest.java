@@ -2,12 +2,7 @@ package org.dspace.app.rest.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.UUID;
-
 public class FavoriteItemResponseRest {
-
-    @JsonProperty("item_id")
-    private UUID itemId;
 
     @JsonProperty("title")
     private String title;
@@ -18,18 +13,9 @@ public class FavoriteItemResponseRest {
     public FavoriteItemResponseRest() {
     }
 
-    public FavoriteItemResponseRest(UUID itemId, String title, String uri) {
-        this.itemId = itemId;
+    public FavoriteItemResponseRest(String title, String uri) {
         this.title = title;
         this.uri = uri;
-    }
-
-    public UUID getItemId() {
-        return itemId;
-    }
-
-    public void setItemId(UUID itemId) {
-        this.itemId = itemId;
     }
 
     public String getTitle() {
