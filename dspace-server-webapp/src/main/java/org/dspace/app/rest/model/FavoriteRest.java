@@ -1,19 +1,10 @@
 package org.dspace.app.rest.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.dspace.app.rest.RestResourceController;
-import org.springframework.hateoas.Link;
 
 import java.util.UUID;
 
-/**
- * REST model for Favorite entity.
- */
-public class FavoriteRest extends BaseObjectRest<Integer> {
-
-    public static final String NAME = "favorite";
-    public static final String CATEGORY = "core";
-    public static final String PLURAL_NAME = "favorites";
+public class FavoriteRest {
 
     @JsonProperty("userID")
     private UUID userId;
@@ -35,25 +26,5 @@ public class FavoriteRest extends BaseObjectRest<Integer> {
 
     public void setItemId(UUID itemId) {
         this.itemId = itemId;
-    }
-
-    @Override
-    public String getType() {
-        return NAME;
-    }
-
-    @Override
-    public String getCategory() {
-        return CATEGORY;
-    }
-
-    @Override
-    public String getTypePlural() {
-        return PLURAL_NAME;
-    }
-
-    @Override
-    public Class getController() {
-        return RestResourceController.class;
     }
 }
