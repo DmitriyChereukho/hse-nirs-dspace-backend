@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dspace.app.rest.RestResourceController;
 import org.springframework.hateoas.Link;
 
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -16,14 +15,11 @@ public class FavoriteRest extends BaseObjectRest<Integer> {
     public static final String CATEGORY = "core";
     public static final String PLURAL_NAME = "favorites";
 
-    @JsonProperty("user_id")
+    @JsonProperty("userID")
     private UUID userId;
 
-    @JsonProperty("item_id")
+    @JsonProperty("itemID")
     private UUID itemId;
-
-    @JsonProperty("created_at")
-    private Date createdAt;
 
     public UUID getUserId() {
         return userId;
@@ -39,14 +35,6 @@ public class FavoriteRest extends BaseObjectRest<Integer> {
 
     public void setItemId(UUID itemId) {
         this.itemId = itemId;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
     }
 
     @Override
