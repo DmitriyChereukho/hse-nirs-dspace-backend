@@ -135,6 +135,13 @@
         <qualifier>isni</qualifier>
         <scope_note>International Standard Name Identifier</scope_note>
     </dc-type>
+
+    <dc-type>
+        <schema>person</schema>
+        <element>identifier</element>
+        <qualifier>spin</qualifier>
+        <scope_note>SPIN-code of the researcher in RSCI (Russian Science Citation Index) / eLIBRARY.RU</scope_note>
+    </dc-type>
     
     <dc-type>
         <schema>person</schema>
